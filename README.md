@@ -16,12 +16,10 @@ signed-tail-gap/
 ├── run_section6.py              # Main Section 6 Monte Carlo driver
 ├── test_section6_validation.py  # Section 6 implementation checks
 ├── validate_numerics.py         # Stable-transform numerical checks
-├── test_smoke.py                # Lightweight smoke test
 ├── requirements.txt             # Python dependencies
 ├── cache/                       # Validated stable-transform caches
 ├── reference_results/           # Retained B=2000 reference results
 ├── figures/                     # EPS copies of manuscript figures
-├── WORKFLOW.tex                 # Detailed computational workflow
 ├── CITATION.cff                 # Citation metadata
 └── README.md
 ```
