@@ -1,0 +1,5 @@
+label,model,n,alpha,dependence,sign_structure,corr_structure,upper_tail_only,k_gamma,k,rejection_practical,rejection_oracle,model_selection_accuracy_practical
+signed_upper_only_stable,stable,2500,1.5,0.3,alternating,equicorr,True,0.4,22,0.9965,0.996,0.013000000000000012
+signed_upper_only_gaussian,gaussian,2500,1.5,-0.8,aligned,toeplitz,True,0.4,22,1.0,1.0,1.0
+signed_full_stable_stress,stable,2500,1.5,0.3,alternating,equicorr,False,0.4,22,0.0265,0.026,0.9875
+signed_full_gaussian_stress,gaussian,2500,1.5,-0.8,aligned,toeplitz,False,0.4,22,0.1695,0.166,0.1055
