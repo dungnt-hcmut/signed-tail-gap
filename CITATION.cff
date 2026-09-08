@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the accompanying manuscript and this repository."
+title: "signed-tail-gap"
+type: software
+authors:
+  - family-names: "Nguyen"
+    given-names: "Thien"
+  - family-names: "Nguyen"
+    given-names: "Dung"
+repository-code: "https://github.com/dungnt-hcmut/signed-tail-gap"
+url: "https://github.com/dungnt-hcmut/signed-tail-gap"
+version: "1.0"
+date-released: 2026-09-08
+keywords:
+  - stable distributions
+  - Gaussian copula
+  - multivariate statistics
+  - tail dependence
+  - signed tail-gap
+  - Monte Carlo simulation
+  - reproducible research
+abstract: >
+  Computational implementation and reproducibility material for the numerical
+  experiments accompanying the manuscript "Multivariate Stable Dependence and
+  Gaussian Copulas: Signed Tail-Gap Testing."
