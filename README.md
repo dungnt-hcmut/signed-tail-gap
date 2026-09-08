@@ -6,65 +6,94 @@ Reproducibility code for the numerical experiments accompanying the manuscript
 
 by **Thien Nguyen and Dung Nguyen**.
 
-This repository contains the computational implementation used for the numerical study in Section 6 of the manuscript. Its purpose is to make the simulation design, calibration procedures, diagnostic experiments, and reported numerical results reproducible.
+This repository contains the Python implementation used for the numerical study in Section 6 of the manuscript. It implements the signed tail-gap (STG) procedure for distinguishing genuine multivariate stable dependence from Gaussian-copula dependence with the same stable margins.
 
-## Repository structure
+## Repository contents
 
 ```text
 signed-tail-gap/
 ├── stg/                         # Core implementation
-├── run_section6.py              # Main experiment driver
+├── run_section6.py              # Main Section 6 Monte Carlo driver
 ├── test_section6_validation.py  # Section 6 implementation checks
-├── validate_numerics.py         # Numerical validation checks
+├── validate_numerics.py         # Stable-transform numerical checks
+├── test_smoke.py                # Lightweight smoke test
 ├── requirements.txt             # Python dependencies
-├── reference_results/           # Retained benchmark results
+├── cache/                       # Validated stable-transform caches
+├── reference_results/           # Retained B=2000 reference results
+├── figures/                     # EPS copies of manuscript figures
+├── WORKFLOW.tex                 # Detailed computational workflow
 ├── CITATION.cff                 # Citation metadata
 └── README.md
 ```
 
-The directory `stg/` contains the computational routines used by the simulation study, while `run_section6.py` provides a unified interface for reproducing the experiments reported in the manuscript.
-
-The directory `reference_results/` contains retained benchmark outputs corresponding to the reference numerical configuration used in the manuscript.
+The archived empirical Section 7 code is intentionally not included because it is not part of the submitted manuscript.
 
 ## Computational environment
 
-Python 3.11 or later is recommended.
+Python 3.11 or 3.12 is recommended.
 
-Install the required packages with
+Create a local environment and install the dependencies with
 
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-The numerical results accompanying the manuscript were generated and checked using a Python 3.11 environment.
+## Validation
 
-Because numerical libraries may evolve over time, small machine-dependent differences in floating-point output are possible. Such differences should not materially affect the conclusions of the experiments.
-
-## Quick validation
-
-Before running the full simulation study, the implementation can be checked using
+Before a long Monte Carlo run, check that the source tree imports correctly and run the Section 6 validation:
 
 ```bash
+python -m compileall -q .
 python test_section6_validation.py
-python validate_numerics.py
 ```
 
-These scripts perform the implementation and numerical consistency checks provided with the repository.
+A successful Section 6 validation ends with
 
-A short computational run can also be executed using
+```text
+ALL_SECTION6_VALIDATION_CHECKS_PASSED
+```
+
+Representative numerical checks for the Gaussian-normal-score to stable-margin transform are
+
+```bash
+python validate_numerics.py --alpha 1.2 --margin symmetric
+python validate_numerics.py --alpha 1.95 --margin symmetric
+python validate_numerics.py --alpha 0.8 --margin positive
+```
+
+A lightweight execution check is
 
 ```bash
 python run_section6.py \
     --profile smoke \
-    --seed 20260815 \
+    --B 20 \
+    --workers 1 \
     --output outputs/section6_smoke
 ```
 
-The smoke profile is intended only to verify that the computational pipeline runs correctly. It is not intended to reproduce the final Monte Carlo accuracy reported in the manuscript.
+The smoke profile verifies the pipeline only; it is not intended to reproduce the Monte Carlo accuracy reported in the manuscript.
 
-## Reproducing the benchmark experiment
+## Reproducing the manuscript benchmark
 
-The principal benchmark configuration can be run with
+The reported benchmark uses
+
+```text
+B = 2000
+nominal level = 0.05
+seed = 20260815
+baseline gamma = 0.40
+k_n = floor(n^gamma)
+```
+
+The central benchmark is bivariate with `alpha=1.5`,
+`n in {500, 1000, 2500}`, stable-factor strengths
+`lambda in {0.30, 0.60}`, and Gaussian-copula correlations
+`rho in {0.30, 0.50, 0.70}`.
+
+Run it with
 
 ```bash
 python run_section6.py \
@@ -75,101 +104,153 @@ python run_section6.py \
     --output outputs/section6_benchmark
 ```
 
-Here:
+## Reproducing the stress diagnostics
 
-- `B` denotes the number of Monte Carlo replications;
-- `seed` controls the pseudorandom-number initialization;
-- `workers` specifies the number of parallel worker processes;
-- `output` specifies the directory in which tables, diagnostics, and figures are stored.
+The boundary, threshold-sensitivity, one-sided, dimension, and signed-ablation experiments reported in Section 6 are generated by
 
-The value of `workers` may be changed according to the available hardware without changing the statistical design of the experiment.
-
-## Experiment profiles
-
-The driver `run_section6.py` provides several experiment profiles, including
-
-```text
-smoke
-benchmark
-tuning
-stress
-full
-exhaustive
+```bash
+python run_section6.py \
+    --profile stress \
+    --B 2000 \
+    --seed 20260815 \
+    --workers 4 \
+    --output outputs/section6_stress
 ```
 
-These profiles are designed for different computational purposes.
+For a complete paper-oriented audit, one may instead use
 
-- `smoke` provides a rapid implementation check.
-- `benchmark` reproduces the main reference experiment.
-- `tuning` examines numerical calibration choices.
-- `stress` performs additional robustness and diagnostic experiments.
-- `full` executes the principal collection of experiments.
-- `exhaustive` runs the most computationally extensive collection of available experiments.
+```bash
+python run_section6.py \
+    --profile full \
+    --B 2000 \
+    --seed 20260815 \
+    --workers 4 \
+    --output outputs/section6_full
+```
 
-For reproduction of the results reported in the manuscript, the benchmark or corresponding manuscript-specific profile should be used rather than the smoke configuration.
+Separate benchmark and stress runs are preferable because their output folders remain independent.
+
+## Apple Silicon / Mac M-series
+
+If BLAS threading competes with multiprocessing, use
+
+```bash
+VECLIB_MAXIMUM_THREADS=1 \
+OMP_NUM_THREADS=1 \
+OPENBLAS_NUM_THREADS=1 \
+python run_section6.py \
+    --profile benchmark \
+    --B 2000 \
+    --seed 20260815 \
+    --workers 4 \
+    --output outputs/section6_benchmark
+```
+
+The same environment-variable settings may be used for the stress or full profile.
+
+## Gaussian-copula stable-margin transform
+
+The Gaussian-copula data-generating mechanism corresponds to
+
+```text
+z -> F_alpha^{-1}(Phi(z)).
+```
+
+For computational efficiency, `stg/stable.py` implements this map through
+`StableNormalScoreTransform`. SciPy's stable quantile function is evaluated on a
+validated central normal-score grid and interpolated with a shape-preserving PCHIP
+interpolant. Outside a conservative switch point, the code uses the corresponding
+first-order stable-tail quantile with a decaying continuity correction. The retained
+cache files avoid recomputing the validated central grids during repeated Monte Carlo
+runs.
+
+The script `validate_numerics.py` compares the central interpolation against direct
+SciPy stable quantiles and also checks the marginal tail-index behavior of transformed
+samples.
 
 ## Reference results
 
-The directory
+The directory `reference_results/` contains retained outputs from the `B=2000`
+runs used to audit the numerical results reported in the manuscript.
+
+### Central benchmark
 
 ```text
-reference_results/
+benchmark_B2000_reference.csv
+table_benchmark_size_reference.csv
+table_benchmark_power_reference.csv
+fig_power_gap_benchmark.pdf
+fig_power_gap_benchmark.png
 ```
 
-contains retained numerical outputs from the benchmark computations used for checking reproducibility.
-
-These files provide reference tables and figures against which newly generated output can be compared. Exact floating-point equality is not required across different operating systems, processors, or numerical-library versions, but the reported statistical conclusions and numerical patterns should remain stable.
-
-## Randomness and reproducibility
-
-The principal numerical experiments use the fixed seed
+### Stress diagnostics and signed/threshold experiments
 
 ```text
-20260815
+table_signed_ablation_reference.csv
+table_threshold_sensitivity_reference.csv
+table_stress_diagnostics_reference.csv
+fig_threshold_sensitivity_reference.pdf
+fig_threshold_sensitivity_reference.png
 ```
 
-unless otherwise specified.
+The stress reference figure files are the runner-generated outputs from the final
+stress run underlying the threshold-sensitivity results. Minor metadata or export
+differences from a typeset manuscript copy do not affect the underlying numerical
+values.
 
-All stochastic calculations are generated algorithmically from the stated pseudorandom initialization. Repeated computations under the same software environment should therefore produce the same or numerically equivalent results.
+Useful benchmark checks include
 
-For Monte Carlo experiments, minor variation can occur if a user intentionally changes the random seed, number of replications, or numerical environment.
+```text
+Stable, n=500,  lambda=0.30: practical 0.0580, oracle 0.0705
+Stable, n=2500, lambda=0.30: practical 0.0255, oracle 0.0270
+Gaussian, n=500,  rho=0.30:  practical 0.6030, oracle 0.5905
+Gaussian, n=2500, rho=0.30:  practical 0.9020, oracle 0.9020
+```
 
-## Relation to the manuscript
+Useful stress checks include
 
-The code in this repository supports the numerical investigation in Section 6 of the manuscript **Multivariate Stable Dependence and Gaussian Copulas: Signed Tail-Gap Testing**.
+```text
+Signed ablation, stable: full signed 0.0265, upper-tail only 0.9965
+Signed ablation, Gaussian rho=-0.80: full signed 0.1695, upper-tail only 1.0000
+Threshold gamma=0.30: stable 0.0130, Gaussian rho=0.70 0.1540
+Threshold gamma=0.55: stable 0.3945, Gaussian rho=0.70 0.9310
+One-sided case: stable 0.1535, Gaussian 0.4345
+```
 
-In particular, it is intended to reproduce the computational evidence used to examine the finite-sample behavior of the signed tail-gap methodology and the associated diagnostic and robustness experiments.
+Monte Carlo reruns on a different software stack may differ slightly within simulation
+error. Gross discrepancies indicate a configuration, environment, or implementation
+mismatch.
 
-The mathematical statements, assumptions, and theoretical results are given in the manuscript. This repository should therefore be read as computational supplementary material rather than as a replacement for the mathematical definitions in the paper.
+## Development-only profiles
+
+The `tuning` (and legacy `calibration`) profile is retained for development/audit
+purposes. It should not be used to re-select the reported baseline threshold after
+inspecting the manuscript results. The `exhaustive` profile is optional and is larger
+than the design required to reproduce the paper.
 
 ## Version corresponding to peer review
 
-The version associated with the submitted manuscript is archived as the GitHub release
+The recommended peer-review snapshot is the GitHub release
 
 ```text
-v1.0-review
+v1.0.1-review
 ```
 
-Reviewers wishing to reproduce the submitted numerical results are encouraged to use that release rather than a later development version of the `main` branch.
+This release adds the retained stress-reference outputs and final reviewer-facing
+documentation. It does not change the STG statistic, data-generating mechanisms,
+Monte Carlo design, or numerical results reported in the manuscript.
 
 ## Citation
 
-Citation metadata are provided in
-
-```text
-CITATION.cff
-```
-
-When referring specifically to the computational implementation, please cite the accompanying manuscript and, where appropriate, this repository release.
+Machine-readable citation metadata are provided in `CITATION.cff`.
 
 ## License and use
 
 No open-source license is assigned to this repository at the peer-review stage.
-
-The source code is made publicly accessible primarily for inspection, verification, and reproducibility of the accompanying research manuscript. Unless otherwise stated, normal copyright restrictions therefore apply.
+The source code is made public for inspection, verification, and reproducibility of
+the accompanying research manuscript. Unless otherwise stated, normal copyright
+restrictions apply.
 
 ## Contact
 
-Questions concerning the mathematical methodology should be addressed with reference to the accompanying manuscript.
-
-Technical issues concerning reproducibility may be reported through the GitHub issue tracker.
+Technical reproducibility issues may be reported through the GitHub issue tracker.

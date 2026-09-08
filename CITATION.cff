@@ -9,7 +9,7 @@ authors:
     given-names: "Dung"
 repository-code: "https://github.com/dungnt-hcmut/signed-tail-gap"
 url: "https://github.com/dungnt-hcmut/signed-tail-gap"
-version: "1.0"
+version: "1.0.1-review"
 date-released: 2026-09-08
 keywords:
   - stable distributions
