@@ -14,7 +14,8 @@ This repository contains the computational implementation used for the numerical
 signed-tail-gap/
 ├── stg/                         # Core implementation
 ├── run_section6.py              # Main experiment driver
-├── validate_section6.py         # Validation and consistency checks
+├── test_section6_validation.py  # Section 6 implementation checks
+├── validate_numerics.py         # Numerical validation checks
 ├── requirements.txt             # Python dependencies
 ├── reference_results/           # Retained benchmark results
 ├── CITATION.cff                 # Citation metadata
@@ -44,10 +45,11 @@ Because numerical libraries may evolve over time, small machine-dependent differ
 Before running the full simulation study, the implementation can be checked using
 
 ```bash
-python validate_section6.py
+python test_section6_validation.py
+python validate_numerics.py
 ```
 
-This performs the internal consistency checks provided with the repository.
+These scripts perform the implementation and numerical consistency checks provided with the repository.
 
 A short computational run can also be executed using
 
